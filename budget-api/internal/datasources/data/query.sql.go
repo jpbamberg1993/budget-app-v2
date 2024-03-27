@@ -7,6 +7,7 @@ package data
 
 import (
 	"context"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -20,16 +21,14 @@ returning id, first_name, last_name, created_at, updated_at
 type CreateUserParams struct {
 	FirstName string
 	LastName  string
-	CreatedAt pgtype.Timestamp
-	UpdatedAt pgtype.Timestamp
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
 	row := q.db.QueryRow(ctx, createUser,
 		arg.FirstName,
 		arg.LastName,
-		arg.CreatedAt,
-		arg.UpdatedAt,
+		time.Now(),
+		time.Now(),
 	)
 	var i User
 	err := row.Scan(

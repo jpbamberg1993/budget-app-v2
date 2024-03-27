@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"jemyishai/budget-app/internal/datasources/data"
+	"jemyishai/budget-app/internal/utils"
 	"log"
 	"net/http"
 	"os"
@@ -66,6 +68,10 @@ func (a *App) Run() (err error) {
 var db = make(map[string]string)
 
 func setupRouter() *gin.Engine {
+	queries, err := utils.SetupPostgres()
+	if err != nil {
+		zap.L().Fatal("failed to setup postgres", zap.Error(err))
+	}
 	// Disable Console Color
 	// gin.DisableConsoleColor()
 	r := gin.Default()
@@ -84,6 +90,20 @@ func setupRouter() *gin.Engine {
 		} else {
 			c.JSON(http.StatusOK, gin.H{"user": user, "status": "no value"})
 		}
+	})
+
+	r.POST("/user", func(c *gin.Context) {
+		var newUser data.CreateUserParams
+		if err := c.BindJSON(&newUser); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		user, err := queries.CreateUser(context.Background(), newUser)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"user": user})
 	})
 
 	// Authorized group (uses gin.BasicAuth() middleware)
